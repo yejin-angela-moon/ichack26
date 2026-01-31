@@ -3,7 +3,10 @@
  * Run with: node test-github.js
  */
 
+require("dotenv").config();
+
 const axios = require("axios");
+const { getFileDiffHistory } = require("../src/services/GitHubService");
 
 const BASE_URL = "http://localhost:3000/api";
 
@@ -40,30 +43,26 @@ async function runTests() {
 
   // Test 1: Fetch file history from your own repo
   if (
-    await test(
-      "Fetch last 5 commits from ichack26/package.json",
-      async () => {
-        const response = await axios.get(
-          `${BASE_URL}/github/file-history/yejin-angela-moon/ichack26/package.json`
+    await test("Fetch last 5 commits from ichack26/package.json", async () => {
+      const response = await axios.get(
+        `${BASE_URL}/github/file-history/yejin-angela-moon/ichack26/package.json`,
+      );
+
+      if (!response.data.success) throw new Error("Response not successful");
+      if (response.data.commits.length === 0)
+        throw new Error("No commits returned");
+      if (!response.data.commits[0].sha) throw new Error("Missing commit SHA");
+      if (!response.data.commits[0].message)
+        throw new Error("Missing commit message");
+
+      log(`  Found ${response.data.count} commits`, "green");
+      response.data.commits.forEach((commit, i) => {
+        log(
+          `  ${i + 1}. ${commit.shortSha} - ${commit.message.split("\n")[0]}`,
+          "green",
         );
-
-        if (!response.data.success) throw new Error("Response not successful");
-        if (response.data.commits.length === 0)
-          throw new Error("No commits returned");
-        if (!response.data.commits[0].sha)
-          throw new Error("Missing commit SHA");
-        if (!response.data.commits[0].message)
-          throw new Error("Missing commit message");
-
-        log(`  Found ${response.data.count} commits`, "green");
-        response.data.commits.forEach((commit, i) => {
-          log(
-            `  ${i + 1}. ${commit.shortSha} - ${commit.message.split("\n")[0]}`,
-            "green"
-          );
-        });
-      }
-    )
+      });
+    })
   ) {
     passed++;
   } else {
@@ -74,7 +73,7 @@ async function runTests() {
   if (
     await test("Fetch last 3 commits with custom count", async () => {
       const response = await axios.get(
-        `${BASE_URL}/github/file-history/yejin-angela-moon/ichack26/package.json?count=3`
+        `${BASE_URL}/github/file-history/yejin-angela-moon/ichack26/package.json?count=3`,
       );
 
       if (response.data.count !== 3)
@@ -90,26 +89,20 @@ async function runTests() {
 
   // Test 3: Test with a popular repo (React)
   if (
-    await test(
-      "Fetch commits from popular repo (facebook/react)",
-      async () => {
-        const response = await axios.get(
-          `${BASE_URL}/github/file-history/facebook/react/package.json?count=3`
-        );
+    await test("Fetch commits from popular repo (facebook/react)", async () => {
+      const response = await axios.get(
+        `${BASE_URL}/github/file-history/facebook/react/package.json?count=3`,
+      );
 
-        if (!response.data.success) throw new Error("Response not successful");
-        if (response.data.commits.length === 0)
-          throw new Error("No commits returned");
+      if (!response.data.success) throw new Error("Response not successful");
+      if (response.data.commits.length === 0)
+        throw new Error("No commits returned");
 
-        log(`  Found ${response.data.count} commits from React`, "green");
-        response.data.commits.slice(0, 2).forEach((commit, i) => {
-          log(
-            `  ${i + 1}. ${commit.author} - ${commit.shortSha}`,
-            "green"
-          );
-        });
-      }
-    )
+      log(`  Found ${response.data.count} commits from React`, "green");
+      response.data.commits.slice(0, 2).forEach((commit, i) => {
+        log(`  ${i + 1}. ${commit.author} - ${commit.shortSha}`, "green");
+      });
+    })
   ) {
     passed++;
   } else {
@@ -118,20 +111,20 @@ async function runTests() {
 
   // Test 4: Test with specific file path
   if (
-    await test(
-      "Fetch commits from specific file path (Node.js)",
-      async () => {
-        const response = await axios.get(
-          `${BASE_URL}/github/file-history/nodejs/node/package.json?count=2`
-        );
+    await test("Fetch commits from specific file path (Node.js)", async () => {
+      const response = await axios.get(
+        `${BASE_URL}/github/file-history/nodejs/node/package.json?count=2`,
+      );
 
-        if (!response.data.success) throw new Error("Response not successful");
-        if (response.data.commits.length === 0)
-          throw new Error("No commits returned");
+      if (!response.data.success) throw new Error("Response not successful");
+      if (response.data.commits.length === 0)
+        throw new Error("No commits returned");
 
-        log(`  Found ${response.data.count} commits for Node.js package.json`, "green");
-      }
-    )
+      log(
+        `  Found ${response.data.count} commits for Node.js package.json`,
+        "green",
+      );
+    })
   ) {
     passed++;
   } else {
@@ -143,30 +136,29 @@ async function runTests() {
     await test("Fetch detailed commit information", async () => {
       // First get a commit SHA
       const historyResponse = await axios.get(
-        `${BASE_URL}/github/file-history/yejin-angela-moon/ichack26/package.json?count=1`
+        `${BASE_URL}/github/file-history/yejin-angela-moon/ichack26/package.json?count=1`,
       );
 
       const sha = historyResponse.data.commits[0].sha;
 
       // Then fetch details
       const detailsResponse = await axios.get(
-        `${BASE_URL}/github/commit/yejin-angela-moon/ichack26/${sha}`
+        `${BASE_URL}/github/commit/yejin-angela-moon/ichack26/${sha}`,
       );
 
-      if (!detailsResponse.data.commit)
-        throw new Error("Missing commit data");
+      if (!detailsResponse.data.commit) throw new Error("Missing commit data");
       if (!detailsResponse.data.commit.filesChanged)
         throw new Error("Missing filesChanged data");
 
       log(`  ✓ Commit ${detailsResponse.data.commit.shortSha}`, "green");
       log(
         `  Files changed in this commit: ${detailsResponse.data.commit.filesChanged.length}`,
-        "green"
+        "green",
       );
       detailsResponse.data.commit.filesChanged.forEach((file) => {
         log(
           `    - ${file.filename} (${file.status}): +${file.additions} -${file.deletions}`,
-          "green"
+          "green",
         );
       });
     })
@@ -181,14 +173,14 @@ async function runTests() {
     await test("Error handling - invalid repository", async () => {
       try {
         await axios.get(
-          `${BASE_URL}/github/file-history/nonexistent/fakerepo/somefile.js`
+          `${BASE_URL}/github/file-history/nonexistent/fakerepo/somefile.js`,
         );
         throw new Error("Should have failed with 404");
       } catch (error) {
         if (error.response?.status === 400) {
           log(
             `  ✓ Correctly returned error: ${error.response.data.message}`,
-            "green"
+            "green",
           );
         } else {
           throw error;
@@ -206,14 +198,14 @@ async function runTests() {
     await test("Error handling - invalid count parameter", async () => {
       try {
         await axios.get(
-          `${BASE_URL}/github/file-history/facebook/react/package.json?count=999`
+          `${BASE_URL}/github/file-history/facebook/react/package.json?count=999`,
         );
         throw new Error("Should have failed");
       } catch (error) {
         if (error.response?.status === 400) {
           log(
             `  ✓ Correctly returned error: ${error.response.data.message}`,
-            "green"
+            "green",
           );
         } else {
           throw error;
@@ -226,14 +218,85 @@ async function runTests() {
     failed++;
   }
 
+  // Test 8: Test getFileDiffHistory service directly
+  if (
+    await test("Fetch diff history for src/routes/GitHub.js (direct service call)", async () => {
+      const diffHistory = await getFileDiffHistory(
+        "yejin-angela-moon",
+        "ichack26",
+        "package.json",
+        5,
+      );
+
+      console.log(diffHistory);
+
+      if (!diffHistory) throw new Error("No diff history returned");
+      if (typeof diffHistory !== "object")
+        throw new Error("Diff history should be an object");
+
+      const commitShas = Object.keys(diffHistory);
+      if (commitShas.length === 0)
+        throw new Error("No commits in diff history");
+
+      log(
+        `  ✓ Retrieved diff history for ${commitShas.length} commits`,
+        "green",
+      );
+      commitShas.slice(0, 3).forEach((sha) => {
+        const commit = diffHistory[sha];
+        log(`  ${commit.shortSha} - ${commit.author}`, "green");
+        log(`    Files changed: ${commit.filesChanged.length}`, "green");
+        commit.filesChanged.forEach((file) => {
+          log(
+            `      • ${file.filename}: +${file.additions} -${file.deletions}`,
+            "green",
+          );
+        });
+        log(
+          `    Raw diff preview (first 300 chars):\n${commit.rawDiff.substring(0, 300)}...`,
+          "green",
+        );
+      });
+    })
+  ) {
+    passed++;
+  } else {
+    failed++;
+  }
+
+  // Test 9: Test getFileDiffHistory with custom count
+  if (
+    await test("Fetch diff history for GitHub.js with custom count (3 commits)", async () => {
+      const diffHistory = await getFileDiffHistory(
+        "yejin-angela-moon",
+        "ichack26",
+        "/package.json",
+        3,
+      );
+
+      const commitCount = Object.keys(diffHistory).length;
+      if (commitCount !== 3)
+        throw new Error(`Expected 3 commits, got ${commitCount}`);
+
+      log(`  ✓ Retrieved exactly ${commitCount} commits`, "green");
+      Object.entries(diffHistory).forEach(([sha, commit]) => {
+        log(
+          `    ${commit.shortSha} - ${commit.message.split("\n")[0]} (${commit.filesChanged.length} files)`,
+          "green",
+        );
+      });
+    })
+  ) {
+    passed++;
+  } else {
+    failed++;
+  }
+
   // Summary
   log("\n=== Test Summary ===", "yellow");
   log(`Passed: ${passed}`, "green");
   log(`Failed: ${failed}`, failed > 0 ? "red" : "green");
-  log(
-    `Total: ${passed + failed}\n`,
-    failed > 0 ? "red" : "green"
-  );
+  log(`Total: ${passed + failed}\n`, failed > 0 ? "red" : "green");
 
   process.exit(failed > 0 ? 1 : 0);
 }
