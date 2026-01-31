@@ -1,14 +1,14 @@
-import express from "express";
-import { generateText } from "../ai/GenerateText.js";
-import { anthropic } from "../ai/Model.js";
+const express = require("express");
+const { generateText } = require("ai");
+const { anthropic } = require("../ai/Model");
 
 const chatRouter = express.Router();
 
 chatRouter.post("/", async (req, res, next) => {
   try {
     const { prompt } = req.body;
-
-    // Using a default model, you can make this dynamic if needed
+    
+    // Using a default model
     const model = anthropic("claude-3-5-sonnet-20240620");
 
     const { text } = await generateText({
@@ -22,4 +22,4 @@ chatRouter.post("/", async (req, res, next) => {
   }
 });
 
-export default chatRouter;
+module.exports = chatRouter;
