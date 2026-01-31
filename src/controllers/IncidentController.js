@@ -102,8 +102,6 @@ function getFileNames(files) {
 
 async function generateSlackReport(crashReasonData) {
   const summary = crashReasonData.summary || "No summary provided";
-  const errorType = crashReasonData.errorType || "Unknown error";
-  const errorMessage = crashReasonData.errorMessage || "Unknown error message";
 
   const files = getFileNames(crashReasonData.files) || [];
   const commitHistory = [];
@@ -117,12 +115,19 @@ async function generateSlackReport(crashReasonData) {
   }
   // const commitHistoryOutput = commitHistory.flat();
 
+  const claudeInterpretedHistory = await axios.post(`${BASE_URL}/chat`, {
+    prompt: `Given the following commit history and diffs, summarize the changes that might have led to the crash,
+    Give your output in a pretty list format in markdown (for Slack) where each entry has the commit message, author, 
+    date, and a brief explanation of the changes in that commit.
+    ${JSON.stringify(commitHistory, null, 2)}`,
+  });
+
   console.log("[Incident] Crash reason analysis:\n", crashReasonData);
 
   return `
   *Crash Reason*: ${summary}
   *Crash Report*: ${crashReasonData.crashReport}
-  *Commit History*: ${JSON.stringify(commitHistory, null, 2)}
+  *Commit History*: ${claudeInterpretedHistory.data.response}
   `;
 }
 
