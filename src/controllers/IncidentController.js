@@ -209,6 +209,7 @@ async function generateSlackReport(appName, crashReasonData) {
   *App Name*: ${appName}
   *Crash Summary*: ${summary}
   *Crash Report*: ${crashReasonData.crashReport}
+  *Link to Dashboard*: http://localhost:8501/
 
   *Recent Commit History*: ${claudeInterpretedHistory.data.response}
   *─────────────────────────────────────--*
