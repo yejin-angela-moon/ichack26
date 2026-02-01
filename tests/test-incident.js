@@ -86,6 +86,7 @@ async function runTests() {
   const success2 = await test("Call POST /api/incident", async () => {
     const response = await axios.post(`${BASE_URL}/incident`, {
       stacktrace: exampleStackTrace,
+      app_name: "broken_app",
     });
 
     if (response.status !== 200) {

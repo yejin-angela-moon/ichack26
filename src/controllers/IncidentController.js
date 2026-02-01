@@ -3,7 +3,6 @@ const { sendSlackNotification } = require("../services/SlackService");
 const { HttpError } = require("../util/HttpError");
 const { systemPrompt } = require("../ai/SystemPrompt");
 const {
-  getFileCommitHistory,
   getTopCommitsWithDiffs,
 } = require("../services/GitHubService");
 
@@ -18,7 +17,7 @@ const app_name = "broken_app";
  * @returns {{ success: boolean, message: string }}
  * @throws {HttpError} When stacktrace is missing
  */
-async function processIncident(stacktrace) {
+async function processIncident(stacktrace, appName) {
   if (stacktrace === undefined || stacktrace === null) {
     throw new HttpError(400, "Missing required field: stacktrace");
   }
@@ -76,7 +75,7 @@ async function processIncident(stacktrace) {
   }
 
   // 5. Summarize the commit history with Claude
-  const slackReport = await generateSlackReport(crashReasonData);
+  const slackReport = await generateSlackReport(appName, crashReasonData);
   sendSlackNotification(slackReport);
   return {
     success: true,
@@ -100,7 +99,7 @@ function getFileNames(files) {
   });
 }
 
-async function generateSlackReport(crashReasonData) {
+async function generateSlackReport(appName, crashReasonData) {
   const summary = crashReasonData.summary || "No summary provided";
 
   const files = getFileNames(crashReasonData.files) || [];
@@ -116,18 +115,27 @@ async function generateSlackReport(crashReasonData) {
   // const commitHistoryOutput = commitHistory.flat();
 
   const claudeInterpretedHistory = await axios.post(`${BASE_URL}/chat`, {
-    prompt: `Given the following commit history and diffs, summarize the changes that might have led to the crash,
-    Give your output in a pretty list format in markdown (for Slack) where each entry has the commit message, author, 
-    date, and a brief explanation of the changes in that commit.
-    ${JSON.stringify(commitHistory, null, 2)}`,
+    prompt: getPromptForInterpretedHistory(JSON.stringify(commitHistory)),
   });
 
   console.log("[Incident] Crash reason analysis:\n", crashReasonData);
 
   return `
-  *Crash Reason*: ${summary}
+  *──────── 🚨 Incident Report 🚨 ────────*
+  *App Name*: ${appName}
+  *Crash Summary*: ${summary}
   *Crash Report*: ${crashReasonData.crashReport}
   *Commit History*: ${claudeInterpretedHistory.data.response}
+  *─────────────────────────────────────--*
+  `;
+}
+
+function getPromptForInterpretedHistory(commitHistoryOutput) {
+  return `Given the following commit history and diffs, summarize the changes that might have led to the crash,
+  Give your output in a list format, as a Slack message, where each entry has the commit message, author, 
+  date, and a brief explanation of the changes in that commit.
+
+  ${commitHistoryOutput}
   `;
 }
 
