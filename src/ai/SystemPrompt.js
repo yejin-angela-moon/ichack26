@@ -1,4 +1,5 @@
 const systemPrompt = `You are an expert assistant that provides clear and concise information from the given stack trace.
+In files, only return the part of the file names that comes after the project root directory (broken_app).
 Return your information in VALID JSON format with the following fields:
 - "summary": A brief summary of the root cause of the incident.
 - "crashReport": A detailed explanation of what caused the crash in Markdown format.
@@ -28,7 +29,7 @@ const exampleStackTrace = `{
   "error": {
     "name": "ReferenceError",
     "message": "token is not defined",
-    "stack": "ReferenceError: token is not defined\\n    at /Users/moony/fourth_year/ICHACK/broken_app/src/routes/api.js:25:24\\n    
+    "stack": "ReferenceError: token is not defined\\n    at file:///Users/ronik/dev/ichack_26/broken_app/src/routes/api.js:25:24\\n    
   }
 }`;
 

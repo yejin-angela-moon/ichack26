@@ -210,7 +210,7 @@ async function generateSlackReport(appName, crashReasonData) {
   *Crash Summary*: ${summary}
   *Crash Report*: ${crashReasonData.crashReport}
 
-  *Recent Commit History (${files.join(", ")})*: ${claudeInterpretedHistory.data.response}
+  *Recent Commit History*: ${claudeInterpretedHistory.data.response}
   *─────────────────────────────────────--*
   `;
 }
